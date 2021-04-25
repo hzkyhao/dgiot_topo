@@ -20,7 +20,6 @@
 -compile([{parse_transform, lager_transform}]).
 
 %% API
--export([swagger_opc/0]).
 -export([handle/4]).
 
 %% API描述
