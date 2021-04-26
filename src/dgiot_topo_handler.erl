@@ -21,6 +21,7 @@
 
 %% API
 -export([handle/4]).
+-export([swagger_topo/0]).
 
 %% API描述
 %% 支持二种方式导入
@@ -73,6 +74,17 @@ handle(OperationID, Args, Context, Req) ->
 %%%===================================================================
 %%% 内部函数 Version:API版本
 %%%===================================================================
+
+%% topo 概要: 组态
+%% OperationId:topo
+%% 请求:GET topo
+do_request(get_topo, Arg, Context, _Req) ->
+    case dgiot_topo:get_topo(Arg, Context) of
+        {ok, Success} ->
+            {ok, Success};
+        {error, Reason} ->
+            {400, Reason}
+    end;
 
 
 %%  服务器不支持的API接口

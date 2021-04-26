@@ -27,7 +27,7 @@
 %% 注册通道类型
 -channel(?TYPE).
 -channel_type(#{
-    type => 2,
+    type => 1,
     title => #{
         zh => <<"TOPO组态通道"/utf8>>
     },
@@ -57,26 +57,44 @@ start(ChannelId, ChannelArgs) ->
     }).
 
 %% 通道初始化
-init(?TYPE, ChannelId, #{<<"product">> := Products} = ChannelArgs) ->
+init(?TYPE, ChannelId, #{<<"product">> := _Products} = ChannelArgs) ->
     NewEnv = get_newenv(ChannelArgs),
-    [{ProductId, App} | _] = get_app(Products),
+%%    [{ProductId, App} | _] = get_app(Products),
     State = #state{
         id = ChannelId,
-        env = NewEnv#{
-            <<"app">> => App,
-            <<"product">> => ProductId
-        }
+        env = NewEnv#{}
     },
+    dgiot_topo:get_Product(),
     {ok, State}.
 
 %% 初始化池子
-handle_init( State) ->
+handle_init(State) ->
+    shuwa_mqtt:subscribe(<<"thing/topo/rest">>),
     {ok, State}.
 
 %% 通道消息处理,注意：进程池调用
 handle_event(EventId, Event, _State) ->
     lager:info("channel ~p, ~p", [EventId, Event]),
     ok.
+
+handle_message({deliver, _Topic, Msg}, State) ->
+    Payload = binary_to_term(shuwa_mqtt:get_payload(Msg)),
+
+    lager:info("Payload ~p", [Payload]),
+
+    case binary:split(shuwa_mqtt:get_topic(Msg), <<$/>>, [global, trim]) of
+        [<<"thing">>, <<"topo">>, <<"rest">>] ->
+            shuwa_mqtt:subscribe(Payload);
+        [<<"thing">>, ProductId, Devaddr, <<"post">>] ->
+            ProductId, Devaddr, #{<<"Arcerl">> => 1, <<"Flow">> => 1.2},
+            DeviceId = shuwa_parse:get_deviceid(ProductId, Devaddr),
+            Pubtopic = <<"thing/", DeviceId/binary, "/post">>,
+            Base64 = base64:encode(jsx:encode(Payload)),
+            shuwa_mqtt:publish(self(), Pubtopic, Base64);
+        _ ->
+            pass
+    end,
+    {ok, State};
 
 handle_message(Message, State) ->
     lager:info("channel ~p", [Message]),

@@ -1,11 +1,47 @@
 {
+  "definitions": {},
+  "paths": {
+    "/get_topo": {
+      "get": {
+        "basePath":"/",
+        "description": "云组态",
+        "parameters": [
+          {
+            "description": "产品ObjectId",
+            "in": "query",
+            "name": "productid",
+            "required": true,
+            "type": "string",
+            "default":""
+          },
+          {
+            "description": "设备编号",
+            "in": "query",
+            "name": "devaddr",
+            "required": false,
+            "type": "string",
+            "default":""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "summary": "云组态",
+        "tags": [
+          "TOPO"
+        ]
+      }
+    }
+  },
   "tags": [
     {
       "name": "TOPO",
       "description": "云组态"
     }
-  ],
-  "definitions": {},
-  "paths": {
-  }
+  ]
 }
