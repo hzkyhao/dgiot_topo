@@ -21,7 +21,7 @@
 
 %% API
 -export([handle/4]).
--export([swagger_opc/0]).
+-export([swagger_topo/0]).
 
 %% API描述
 %% 支持二种方式导入
@@ -30,9 +30,9 @@
 %%    shuwa_http_server:bind(<<"/opc">>, ?MODULE, [], Metadata)
 %% 2. 从模块的priv/swagger/下导入
 %%    shuwa_http_server:bind(<<"/swagger_topo.json">>, ?MODULE, [], priv)
-swagger_opc() ->
+swagger_topo() ->
     [
-        shuwa_http_server:bind(<<"/swagger_opc.json">>, ?MODULE, [], priv)
+        shuwa_http_server:bind(<<"/swagger_topo.json">>, ?MODULE, [], priv)
     ].
 
 
