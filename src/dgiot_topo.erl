@@ -80,7 +80,7 @@ send_topo(ProductId, Devaddr, Payload) ->
     DeviceId = shuwa_parse:get_deviceid(ProductId, Devaddr),
     Shape =
         maps:fold(fun(K, V, Acc) ->
-            Text = get_name(ProductId, K, V),
+            Text = get_name(ProductId, K, shuwa_utils:to_binary(V)),
             Acc ++ [#{<<"id">> => shuwa_parse:get_shapeid(DeviceId, K), <<"text">> => Text}]
                   end, [], Payload),
     Pubtopic = <<"thing/", DeviceId/binary, "/post">>,
