@@ -81,7 +81,7 @@ send_topo(ProductId, Devaddr, Payload) ->
     Shape =
         maps:fold(fun(K, V, Acc) ->
             Text = get_name(ProductId, K, V),
-            Acc ++ [#{<<"id">> => shuwa_parse:get_shapeid(<<"dsad">>, K), <<"text">> => Text}]
+            Acc ++ [#{<<"id">> => shuwa_parse:get_shapeid(DeviceId, K), <<"text">> => Text}]
                   end, [], Payload),
     Pubtopic = <<"thing/", DeviceId/binary, "/post">>,
     Base64 = base64:encode(jsx:encode(#{<<"konva">> => Shape})),
