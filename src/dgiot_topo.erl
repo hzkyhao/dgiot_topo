@@ -31,40 +31,100 @@ docroot() ->
     Root ++ "www".
 
 
+%%get_topo(Arg, _Context) ->
+%%    #{<<"productid">> := ProductId,
+%%        <<"devaddr">> := Devaddr
+%%    } = Arg,
+%%    case shuwa_parse:get_object(<<"Product">>, ProductId) of
+%%        {ok, #{<<"config">> := #{<<"konva">> := #{<<"Shape">> := Shape} = Konva}}} when length(Shape) > 0 ->
+%%            case Devaddr of
+%%                undefined ->
+%%%%                    product
+%%%%                    Topic = <<"thing/", ProductId/binary, "/post">>,
+%%%%                    Base64 = base64:encode(jsx:encode(Konva)),
+%%%%                    shuwa_mqtt:publish(self(), Topic, Base64),
+%%                    NewShape =
+%%                        lists:foldl(fun(X, Acc) ->
+%%                            Text = get_name(ProductId, maps:get(<<"id">>, X), shuwa_utils:to_binary(maps:get(<<"text">>, X))),
+%%                            Acc ++ [X#{<<"text">> => Text}]
+%%                                    end, [], Shape),
+%%                    {ok, #{<<"code">> => 200, <<"message">> => <<"SUCCESS">>, <<"data">> => Konva#{<<"Shape">> := NewShape}}};
+%%                _ ->
+%%%%                    device
+%%                    DeviceId = shuwa_parse:get_deviceid(ProductId, Devaddr),
+%%                    NewShape =
+%%                        lists:foldl(fun(X, Acc) ->
+%%                            Text = get_name(ProductId, maps:get(<<"id">>, X), shuwa_utils:to_binary(maps:get(<<"text">>, X))),
+%%                            Acc ++ [X#{<<"id">> => shuwa_parse:get_shapeid(DeviceId, maps:get(<<"id">>, X)), <<"text">> => Text}]
+%%                                    end, [], Shape),
+%%%%                    Topic = <<"thing/", DeviceId/binary, "/post">>,
+%%%%                    Base64 = base64:encode(jsx:encode(Konva#{<<"Shape">> := NewShape})),
+%%%%                    shuwa_mqtt:publish(self(), Topic, Base64),
+%%                    {ok, #{<<"code">> => 200, <<"message">> => <<"SUCCESS">>, <<"data">> => Konva#{<<"Shape">> := NewShape}}}
+%%            end;
+%%        _ ->
+%%            {ok, #{<<"code">> => 204, <<"message">> => <<"没有组态"/utf8>>}}
+%%    end;
+
 get_topo(Arg, _Context) ->
     #{<<"productid">> := ProductId,
         <<"devaddr">> := Devaddr
     } = Arg,
     case shuwa_parse:get_object(<<"Product">>, ProductId) of
-        {ok, #{<<"config">> := #{<<"konva">> := #{<<"Shape">> := Shape} = Konva}}} when length(Shape) > 0 ->
+        {ok, #{<<"config">> := #{<<"konva">> := #{<<"Stage">> := #{<<"children">> := Children} = Stage} = Konva}}} when length(Children) > 0 ->
             case Devaddr of
                 undefined ->
 %%                    product
 %%                    Topic = <<"thing/", ProductId/binary, "/post">>,
 %%                    Base64 = base64:encode(jsx:encode(Konva)),
 %%                    shuwa_mqtt:publish(self(), Topic, Base64),
-                    NewShape =
-                        lists:foldl(fun(X, Acc) ->
-                            Text = get_name(ProductId, maps:get(<<"id">>, X), shuwa_utils:to_binary(maps:get(<<"text">>, X))),
-                            Acc ++ [X#{<<"text">> => Text}]
-                                    end, [], Shape),
-                    {ok, #{<<"code">> => 200, <<"message">> => <<"SUCCESS">>, <<"data">> => Konva#{<<"Shape">> := NewShape}}};
+                    NewChildren1 = get_children(ProductId, Children, ProductId),
+                    {ok, #{<<"code">> => 200, <<"message">> => <<"SUCCESS">>, <<"data">> => Konva#{<<"Stage">> => Stage#{<<"children">> => NewChildren1}}}};
                 _ ->
 %%                    device
                     DeviceId = shuwa_parse:get_deviceid(ProductId, Devaddr),
-                    NewShape =
-                        lists:foldl(fun(X, Acc) ->
-                            Text = get_name(ProductId, maps:get(<<"id">>, X), shuwa_utils:to_binary(maps:get(<<"text">>, X))),
-                            Acc ++ [X#{<<"id">> => shuwa_parse:get_shapeid(DeviceId, maps:get(<<"id">>, X)), <<"text">> => Text}]
-                                    end, [], Shape),
 %%                    Topic = <<"thing/", DeviceId/binary, "/post">>,
 %%                    Base64 = base64:encode(jsx:encode(Konva#{<<"Shape">> := NewShape})),
 %%                    shuwa_mqtt:publish(self(), Topic, Base64),
-                    {ok, #{<<"code">> => 200, <<"message">> => <<"SUCCESS">>, <<"data">> => Konva#{<<"Shape">> := NewShape}}}
-            end;
-        _ ->
-            {ok, #{<<"code">> => 204, <<"message">> => <<"没有组态"/utf8>>}}
+                    NewChildren1 = get_children(ProductId, Children, DeviceId),
+                    {ok, #{<<"code">> => 200, <<"message">> => <<"SUCCESS">>, <<"data">> => Konva#{<<"Stage">> => Stage#{<<"children">> => NewChildren1}}}};
+                _ ->
+                    {ok, #{<<"code">> => 204, <<"message">> => <<"没有组态"/utf8>>}}
+            end
     end.
+
+get_children(ProductId, Children, DeviceId) ->
+    lists:foldl(fun(X, Acc) ->
+        #{<<"attrs">> := Attrs, <<"className">> := ClassName} = X,
+        X1 =
+            case maps:find(<<"children">>, X) of
+                error ->
+                    X#{<<"attrs">> => get_attrs(ProductId, ClassName, Attrs, DeviceId)};
+                {ok, SubChildren} ->
+                    X#{<<"attrs">> => get_attrs(ProductId, ClassName, Attrs, DeviceId),
+                        <<"children">> => get_children(ProductId, SubChildren, DeviceId)}
+            end,
+        Acc ++ [X1]
+                end, [], Children).
+
+get_attrs(ProductId, ClassName, Attrs, DeviceId) ->
+    case ClassName of
+        <<"Layer">> ->
+            Attrs;
+        <<"Group">> ->
+            Attrs;
+        _ ->
+            case ProductId of
+                DeviceId ->
+                    Text = get_name(ProductId, maps:get(<<"id">>, Attrs, <<"">>), shuwa_utils:to_binary(maps:get(<<"text">>, Attrs, <<"">>))),
+                    shuwa_data:insert({shapetype, shuwa_parse:get_shapeid(ProductId, maps:get(<<"id">>, Attrs))}, ClassName),
+                    Attrs#{<<"text">> => Text};
+                _ ->
+                    Text = get_name(ProductId, maps:get(<<"id">>, Attrs), shuwa_utils:to_binary(maps:get(<<"text">>, Attrs))),
+                    Attrs#{<<"id">> => shuwa_parse:get_shapeid(DeviceId, maps:get(<<"id">>, Attrs)), <<"text">> => Text}
+            end
+    end.
+
 
 %% #{<<"Arcel">>=> 1,<<"Flow">> => 1.2} => ShapeId = md5(<<DeviceId/binary,"Arcel">>)
 %%{
@@ -73,10 +133,12 @@ get_topo(Arg, _Context) ->
 %%                {
 %%                "id":[shapeid],
 %%                "text":"16",
+%%                "type":"text",
 %%                },
 %%                {
 %%                "id":[shapeid],
 %%                "text":"16",
+%%                "type":"Image",
 %%                }
 %%        ]
 %%    }
@@ -113,22 +175,13 @@ get_Product() ->
         {ok, #{<<"results">> := Results}} ->
             lists:foldl(fun(X, _Acc) ->
                 case X of
-                    #{<<"objectId">> := ObjectId, <<"config">> := #{<<"konva">> := #{<<"Shape">> := Shape}}, <<"thing">> := #{<<"properties">> := Properties}} ->
+                    #{<<"objectId">> := ProductId, <<"config">> := #{<<"konva">> := #{<<"Stage">> := #{<<"children">> := Children}}}, <<"thing">> := #{<<"properties">> := Properties}} ->
                         lists:map(fun(P) ->
                             Identifier = maps:get(<<"identifier">>, P),
                             Name = maps:get(<<"name">>, P),
-                            shuwa_data:insert({product, <<ObjectId/binary, Identifier/binary>>}, Name)
+                            shuwa_data:insert({product, <<ProductId/binary, Identifier/binary>>}, Name)
                                   end, Properties),
-                        lists:map(fun(S) ->
-                            Type =
-                                case maps:find(<<"type">>, S) of
-                                    error ->
-                                        <<"text">>;
-                                    {ok, Type1} ->
-                                        Type1
-                                end,
-                            shuwa_data:insert({shapetype, shuwa_parse:get_shapeid(ObjectId, maps:get(<<"id">>, S))}, Type)
-                                  end, Shape);
+                        get_children(ProductId, Children, ProductId);
                     _ ->
                         pass
                 end
@@ -136,3 +189,4 @@ get_Product() ->
         _ ->
             pass
     end.
+
