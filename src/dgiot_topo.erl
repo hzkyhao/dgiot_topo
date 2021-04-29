@@ -116,15 +116,16 @@ get_attrs(ProductId, ClassName, Attrs, DeviceId) ->
         _ ->
             case ProductId of
                 DeviceId ->
-                    Text = get_name(ProductId, maps:get(<<"id">>, Attrs, <<"">>), shuwa_utils:to_binary(maps:get(<<"text">>, Attrs, <<"">>))),
+%%                    Text = get_name(ProductId, maps:get(<<"id">>, Attrs, <<"">>), shuwa_utils:to_binary(maps:get(<<"text">>, Attrs, <<"">>))),
                     shuwa_data:insert({shapetype, shuwa_parse:get_shapeid(ProductId, maps:get(<<"id">>, Attrs))}, ClassName),
-                    Attrs#{<<"text">> => Text};
+%%                    Attrs#{<<"text">> => Text};
+                    Attrs;
                 _ ->
-                    Text = get_name(ProductId, maps:get(<<"id">>, Attrs), shuwa_utils:to_binary(maps:get(<<"text">>, Attrs))),
-                    Attrs#{<<"id">> => shuwa_parse:get_shapeid(DeviceId, maps:get(<<"id">>, Attrs)), <<"text">> => Text}
+%%                    Text = get_name(ProductId, maps:get(<<"id">>, Attrs), shuwa_utils:to_binary(maps:get(<<"text">>, Attrs))),
+%%                    Attrs#{<<"id">> => shuwa_parse:get_shapeid(DeviceId, maps:get(<<"id">>, Attrs)), <<"text">> => Text}
+                    Attrs#{<<"id">> => shuwa_parse:get_shapeid(DeviceId, maps:get(<<"id">>, Attrs))}
             end
     end.
-
 
 %% #{<<"Arcel">>=> 1,<<"Flow">> => 1.2} => ShapeId = md5(<<DeviceId/binary,"Arcel">>)
 %%{
@@ -143,7 +144,7 @@ get_attrs(ProductId, ClassName, Attrs, DeviceId) ->
 %%        ]
 %%    }
 %%}  shuwa_data:get({product, <<"16cf2bf9f7energy">>})
-%% dgiot_topo:send_topo(<<"9b5c1a3ed5">>, <<"001">>, #{<<"head">> => 1.2}).
+%% dgiot_topo:send_topo(<<"9b5c1a3ed5">>, <<"001">>, #{<<"Acrel">> => 10,<<"current">> => 20,<<"current">> => 30}).
 send_topo(ProductId, Devaddr, Payload) ->
     DeviceId = shuwa_parse:get_deviceid(ProductId, Devaddr),
     Shape =
