@@ -87,6 +87,19 @@ do_request(get_topo, Arg, Context, _Req) ->
     end;
 
 
+%% topo 概要: 组态
+%% OperationId:topo
+%% 请求:post post_send_topo
+do_request(post_send_topo, Arg, Context, _Req) ->
+    lager:info("Arg ~p", [Arg]),
+    case dgiot_topo:put_topo(Arg, Context) of
+        {ok, Success} ->
+            {ok, Success};
+        {error, Reason} ->
+            {400, Reason}
+    end;
+
+
 %%  服务器不支持的API接口
 do_request(_OperationId, _Args, _Context, _Req) ->
     {error, <<"Not Allowed.">>}.

@@ -36,6 +36,54 @@
           "TOPO"
         ]
       }
+    },
+    "/send_topo": {
+      "post": {
+        "basePath":"/",
+        "security": [],
+        "description": "云组态",
+        "consumes": [
+          "*"
+        ],
+        "parameters": [
+          {
+            "description": "产品ObjectId",
+            "in": "body",
+            "name": "productid",
+            "required": true,
+            "type": "string",
+            "default":""
+          },
+          {
+            "description": "设备编号",
+            "in": "body",
+            "name": "devaddr",
+            "required": true,
+            "type": "string",
+            "default":""
+          },
+          {
+            "description": "base64",
+            "in": "body",
+            "name": "base64",
+            "required": true,
+            "type": "string",
+            "default":""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "summary": "云组态",
+        "tags": [
+          "TOPO"
+        ]
+      }
     }
   },
   "tags": [

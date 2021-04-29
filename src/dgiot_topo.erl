@@ -16,7 +16,7 @@
 -module(dgiot_topo).
 -author("johnliu").
 
--export([start_http/0, docroot/0, get_topo/2, send_topo/3, get_Product/0, get_name/3]).
+-export([start_http/0, docroot/0, get_topo/2, send_topo/3, get_Product/0, get_name/3, put_topo/2]).
 
 start_http() ->
     Port = application:get_env(?MODULE, port, 6081),
@@ -130,7 +130,7 @@ get_attrs(ProductId, ClassName, Attrs, DeviceId) ->
 %% #{<<"Arcel">>=> 1,<<"Flow">> => 1.2} => ShapeId = md5(<<DeviceId/binary,"Arcel">>)
 %%{
 %%"konva":{
-%%    "Shape":[
+%%    [
 %%                {
 %%                "id":[shapeid],
 %%                "text":"16",
@@ -162,6 +162,17 @@ send_topo(ProductId, Devaddr, Payload) ->
     Pubtopic = <<"thing/", DeviceId/binary, "/post">>,
     Base64 = base64:encode(jsx:encode(#{<<"konva">> => Shape})),
     shuwa_mqtt:publish(self(), Pubtopic, Base64).
+
+
+put_topo(Arg, _Context) ->
+    #{<<"productid">> := ProductId,
+        <<"devaddr">> := Devaddr,
+        <<"base64">> := Base64
+    } = Arg,
+    DeviceId = shuwa_parse:get_deviceid(ProductId, Devaddr),
+    Pubtopic = <<"thing/", DeviceId/binary, "/post">>,
+    shuwa_mqtt:publish(self(), Pubtopic, Base64),
+    {ok, <<"Success">>}.
 
 get_name(ProductId, K, V) ->
     case shuwa_data:get({product, <<ProductId/binary, K/binary>>}) of
