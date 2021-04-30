@@ -178,8 +178,13 @@ get_name(ProductId, K, V) ->
     case shuwa_data:get({product, <<ProductId/binary, K/binary>>}) of
         not_find ->
             V;
-        Name ->
-            <<Name/binary, ":", V/binary>>
+        {Name, Type,Unit} when Type =:= <<"float">> ->
+            NewV =  shuwa_utils:to_binary(shuwa_utils:to_float(V,3)),
+            <<Name/binary, ": ", NewV/binary," ",Unit/binary >>;
+        {Name, _Type,Unit} ->
+            %todo 物模型配置错误，临时规避一下
+            NewV =  shuwa_utils:to_binary(shuwa_utils:to_float(V/1.0,3)),
+            <<Name/binary, ":", NewV/binary, " ", Unit/binary>>
     end.
 
 get_Product() ->
@@ -189,9 +194,22 @@ get_Product() ->
                 case X of
                     #{<<"objectId">> := ProductId, <<"config">> := #{<<"konva">> := #{<<"Stage">> := #{<<"children">> := Children}}}, <<"thing">> := #{<<"properties">> := Properties}} ->
                         lists:map(fun(P) ->
+%%                            "dataType": {
+%%                                "type": "float",
+%%                                "specs": {
+%%                                    "max": 500,
+%%                                    "min": -500,
+%%                                    "step": 0.1,
+%%                                    "unit": "MPa"
+%%                                }
+%%                            },
+                            DataType = maps:get(<<"dataType">>,P),
+                            Type = maps:get(<<"type">>,DataType),
+                            Specs = maps:get(<<"specs">>,DataType),
+                            Unit = maps:get(<<"unit">>,Specs,<<"">>),
                             Identifier = maps:get(<<"identifier">>, P),
                             Name = maps:get(<<"name">>, P),
-                            shuwa_data:insert({product, <<ProductId/binary, Identifier/binary>>}, Name)
+                            shuwa_data:insert({product, <<ProductId/binary, Identifier/binary>>}, {Name, Type,Unit})
                                   end, Properties),
                         get_children(ProductId, Children, ProductId);
                     _ ->
